@@ -1,0 +1,7 @@
+{
+  "initialized": true,
+  "mode": "simulation",
+  "timestamp": "2026-01-07T02:13:37.845Z",
+  "description": "Blockchain simulation mode - records are stored locally but not on Hyperledger Fabric",
+  "futureTransactions": 0
+}

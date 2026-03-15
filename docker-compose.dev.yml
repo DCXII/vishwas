@@ -1,0 +1,159 @@
+services:
+  # MongoDB Database - Development
+  mongodb:
+    image: mongo:6.0
+    pull_policy: if_not_present
+    container_name: vishwas-mongodb-dev
+    restart: on-failure
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+      - mongodb_config_dev:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: vishwas
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vishwas-dev-network
+
+  # Face Recognition Service - Development (Python)
+  face-service:
+    build:
+      context: ./face_service
+      dockerfile: Dockerfile
+    container_name: vishwas-face-service-dev
+    restart: on-failure
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./face_service:/app
+      - ./face_service/uploads:/app/uploads
+      - ./face_service/source_images:/app/source_images
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: app.py
+      FLASK_DEBUG: 1
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017/vishwas?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - vishwas-dev-network
+
+  # Backend API - Development (Node.js/Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vishwas-backend-dev
+    restart: on-failure
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+      - ./backend/wallet:/app/wallet
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017/vishwas?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key}
+      FACE_SERVICE_URL: http://face-service:5002
+      BLOCKCHAIN_LEDGER: mongodb
+      LOG_LEVEL: debug
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      face-service:
+        condition: service_started
+    networks:
+      - vishwas-dev-network
+    command: npm run dev  # Use nodemon for auto-restart
+
+  # Frontend - Development (React with hot reload)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://localhost:5000
+    container_name: vishwas-frontend-dev
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    environment:
+      REACT_APP_API_URL: http://localhost:5000
+      REACT_APP_FACE_SERVICE_URL: http://localhost:5002
+      BROWSER: none  # Don't open browser inside container
+    depends_on:
+      - backend
+    networks:
+      - vishwas-dev-network
+    stdin_open: true
+    tty: true
+
+  # Redis Cache - Development
+  redis:
+    image: redis:7-alpine
+    pull_policy: if_not_present
+    container_name: vishwas-redis-dev
+    restart: on-failure
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - vishwas-dev-network
+
+  # MongoDB Admin UI - Development
+  mongo-express:
+    image: mongo-express:latest
+    pull_policy: if_not_present
+    container_name: vishwas-mongo-express
+    restart: on-failure
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-password}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongodb
+    networks:
+      - vishwas-dev-network
+
+  # Redis Admin UI - Development
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    pull_policy: if_not_present
+    container_name: vishwas-redis-commander
+    restart: on-failure
+    ports:
+      - "8082:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - vishwas-dev-network
+
+volumes:
+  mongodb_data_dev:
+  mongodb_config_dev:
+  redis_data_dev:
+
+networks:
+  vishwas-dev-network:
+    driver: bridge

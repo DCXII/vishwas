@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Identity System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-mesh"></div>
+    
+    <main class="app-container">
+        <header>
+            <h1>Face<span class="highlight">ID</span></h1>
+            <p>Secure. Fast. Intelligent Identity Verification.</p>
+        </header>
+
+        <section id="mode-selection" class="glass-panel active">
+            <h2>Select Operation</h2>
+            <div class="card-grid">
+                <div class="card" onclick="showSection('register-section')">
+                    <div class="icon">👤</div>
+                    <h3>Register New Profile</h3>
+                    <p>Add a new person to the identity database.</p>
+                </div>
+                <div class="card" onclick="showSection('identify-section')">
+                    <div class="icon">🔍</div>
+                    <h3>Identify Person</h3>
+                    <p>Scan a face to retrieve profile details.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Registration Section -->
+        <section id="register-section" class="glass-panel hidden">
+            <button class="back-btn" onclick="showSection('mode-selection')">← Back</button>
+            <h2>Register Profile</h2>
+            <div class="split-view">
+                <div class="camera-container">
+                    <video id="reg-video" autoplay muted></video>
+                    <canvas id="reg-canvas" class="hidden"></canvas>
+                    <div class="camera-controls">
+                        <button id="reg-capture-btn" class="primary-btn">Capture Photo</button>
+                        <button id="reg-retake-btn" class="secondary-btn hidden">Retake</button>
+                    </div>
+                </div>
+                <div class="form-container">
+                    <form id="register-form">
+                        <div class="input-group">
+                            <label>Full Name</label>
+                            <input type="text" id="reg-name" required placeholder="John Doe">
+                        </div>
+                        <div class="input-group">
+                            <label>Age</label>
+                            <input type="number" id="reg-age" placeholder="25">
+                        </div>
+                        <div class="input-group">
+                            <label>Bio / Description</label>
+                            <textarea id="reg-bio" rows="3" placeholder="Software Engineer at Tech Corp..."></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">Complete Registration</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Identification Section -->
+        <section id="identify-section" class="glass-panel hidden">
+            <button class="back-btn" onclick="showSection('mode-selection')">← Back</button>
+            <h2>Identify Person</h2>
+            <div class="center-view">
+                <div class="camera-container large">
+                    <video id="id-video" autoplay muted></video>
+                    <canvas id="id-canvas" class="hidden"></canvas>
+                    <div class="scan-overlay"></div>
+                </div>
+                <button id="id-scan-btn" class="primary-btn pulse">Scan Face</button>
+                <button id="id-upload-btn" class="secondary-btn" style="margin-top: 10px;">Upload Photo</button>
+                <input type="file" id="id-file-input" accept="image/*" class="hidden">
+                <button id="id-retry-btn" class="secondary-btn hidden" onclick="resetIdentification()">Scan Again</button>
+            </div>
+
+            <!-- Result Modal -->
+            <div id="result-overlay" class="overlay hidden">
+                <div class="result-card glass-panel">
+                    <img id="res-image" src="" alt="Identified Person">
+                    <h3 id="res-name">Name</h3>
+                    <p class="res-meta"><span id="res-age">0</span> years old</p>
+                    <p id="res-bio" class="res-bio">Bio...</p>
+                    <button onclick="closeResult()" class="secondary-btn">Close</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
